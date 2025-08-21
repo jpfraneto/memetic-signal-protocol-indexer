@@ -1,0 +1,162 @@
+export const ProjectLighthouseV13Abi = [
+  {
+    type: "constructor",
+    inputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "createAccount",
+    inputs: [{ name: "fid", type: "uint256", internalType: "uint256" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "subscribe",
+    inputs: [],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "signal",
+    inputs: [
+      { name: "ca", type: "address", internalType: "address" },
+      { name: "direction", type: "uint8", internalType: "uint8" },
+      { name: "timeframe", type: "uint8", internalType: "uint8" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "resolveSignal",
+    inputs: [
+      { name: "signalId", type: "uint256", internalType: "uint256" },
+      { name: "won", type: "bool", internalType: "bool" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "withdrawUSDC",
+    inputs: [{ name: "amount", type: "uint256", internalType: "uint256" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "getAccount",
+    inputs: [{ name: "user", type: "address", internalType: "address" }],
+    outputs: [
+      {
+        type: "tuple",
+        components: [
+          { name: "fid", type: "uint256", internalType: "uint256" },
+          { name: "isSubscribed", type: "bool", internalType: "bool" },
+          { name: "subscriptionExpiry", type: "uint64", internalType: "uint64" },
+        ],
+        internalType: "struct ProjectLighthouseV13.Account",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getSignal",
+    inputs: [{ name: "signalId", type: "uint256", internalType: "uint256" }],
+    outputs: [
+      {
+        type: "tuple",
+        components: [
+          { name: "fid", type: "uint256", internalType: "uint256" },
+          { name: "ca", type: "address", internalType: "address" },
+          { name: "direction", type: "uint8", internalType: "uint8" },
+          { name: "timeframe", type: "uint8", internalType: "uint8" },
+          { name: "createdAt", type: "uint64", internalType: "uint64" },
+          { name: "expiresAt", type: "uint64", internalType: "uint64" },
+          { name: "isResolved", type: "bool", internalType: "bool" },
+          { name: "won", type: "bool", internalType: "bool" },
+        ],
+        internalType: "struct ProjectLighthouseV13.Signal",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getUserSignals",
+    inputs: [{ name: "fid", type: "uint256", internalType: "uint256" }],
+    outputs: [{ name: "", type: "uint256[]", internalType: "uint256[]" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "isSubscribed",
+    inputs: [{ name: "user", type: "address", internalType: "address" }],
+    outputs: [{ name: "", type: "bool", internalType: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getTimeframeHours",
+    inputs: [{ name: "timeframe", type: "uint8", internalType: "uint8" }],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "pure",
+  },
+  {
+    type: "function",
+    name: "getContractStats",
+    inputs: [],
+    outputs: [
+      { name: "_totalSignals", type: "uint256", internalType: "uint256" },
+      { name: "_totalAccounts", type: "uint256", internalType: "uint256" },
+      { name: "_usdcBalance", type: "uint256", internalType: "uint256" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "event",
+    name: "AccountCreated",
+    inputs: [
+      { name: "user", type: "address", indexed: true, internalType: "address" },
+      { name: "fid", type: "uint256", indexed: true, internalType: "uint256" },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "Subscribed",
+    inputs: [
+      { name: "user", type: "address", indexed: true, internalType: "address" },
+      { name: "fid", type: "uint256", indexed: true, internalType: "uint256" },
+      { name: "expiresAt", type: "uint64", indexed: false, internalType: "uint64" },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "SignalCreated",
+    inputs: [
+      { name: "signalId", type: "uint256", indexed: true, internalType: "uint256" },
+      { name: "fid", type: "uint256", indexed: true, internalType: "uint256" },
+      { name: "ca", type: "address", indexed: true, internalType: "address" },
+      { name: "direction", type: "uint8", indexed: false, internalType: "uint8" },
+      { name: "timeframe", type: "uint8", indexed: false, internalType: "uint8" },
+      { name: "expiresAt", type: "uint64", indexed: false, internalType: "uint64" },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "SignalResolved",
+    inputs: [
+      { name: "signalId", type: "uint256", indexed: true, internalType: "uint256" },
+      { name: "fid", type: "uint256", indexed: true, internalType: "uint256" },
+      { name: "won", type: "bool", indexed: false, internalType: "bool" },
+    ],
+    anonymous: false,
+  },
+] as const;

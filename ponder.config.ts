@@ -1,6 +1,6 @@
 import { createConfig } from "ponder";
 
-import { ProjectLighthouseV12Abi } from "./abis/ProjectLighthouseV12Abi";
+import { ProjectLighthouseV13Abi } from "./abis/ProjectLighthouseV13Abi";
 
 export default createConfig({
   database: {
@@ -18,9 +18,9 @@ export default createConfig({
     },
   },
   contracts: {
-    ProjectLighthouseV12: {
-      abi: ProjectLighthouseV12Abi,
-      address: "0xE6EA0276F2efEAe42dE1DeE0A6C4a4bE3cC85bEB",
+    ProjectLighthouseV13: {
+      abi: ProjectLighthouseV13Abi,
+      address: "0xb6e81aad2585a772f0802b79eff6ce333634d6e7",
       chain: "base",
       startBlock: 34492600,
     },

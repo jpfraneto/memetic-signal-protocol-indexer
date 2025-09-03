@@ -1,20 +1,21 @@
 import { createConfig } from "ponder";
 
-import { ExampleContractAbi } from "./abis/ExampleContractAbi";
+import { ProjectLighthouseV16Abi } from "./abis/ProjectLighthouseV16Abi";
 
 export default createConfig({
+  database: {
+    kind: "postgres",
+    connectionString: process.env.DATABASE_URL,
+  },
   chains: {
-    mainnet: {
-      id: 1,
-      rpc: process.env.PONDER_RPC_URL_1!,
-    },
+    base: { id: 8453, rpc: process.env.PONDER_RPC_URL_1 },
   },
   contracts: {
-    ExampleContract: {
-      chain: "mainnet",
-      abi: ExampleContractAbi,
-      address: "0x0000000000000000000000000000000000000000",
-      startBlock: 1234567,
+    ProjectLighthouseV16: {
+      abi: ProjectLighthouseV16Abi,
+      address: "0xd02De59d7Cc4dbbB609BB84fAb85936739ae0068",
+      chain: "base",
+      startBlock: 34979321,
     },
   },
 });

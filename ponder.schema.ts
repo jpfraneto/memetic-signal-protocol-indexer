@@ -6,91 +6,90 @@ export const signals = onchainTable("signals", (t) => ({
   direction: t.boolean().notNull(), // false = DOWN, true = UP
   duration: t.integer().notNull(), // Duration in days
   timestamp: t.bigint().notNull(), // Block timestamp when signal was created
-  blockNumber: t.bigint().notNull(),
-  id: t.hex().notNull().primaryKey(),
+  block_number: t.bigint().notNull(),
   status: t.integer().notNull().default(0), // 0 = active, 1 = won, 2 = lost
-  expiresAt: t.bigint().notNull(), // When the signal expires
-  transactionHash: t.hex().notNull(),
+  expires_at: t.bigint().notNull(), // When the signal expires
+  id: t.hex().notNull().primaryKey(),
 }));
 
-export const fidStats = onchainTable("fid_stats", (t) => ({
+export const fid_stats = onchainTable("fid_stats", (t) => ({
   fid: t.integer().primaryKey(),
-  totalSignals: t.integer().notNull().default(0),
-  activeSignals: t.integer().notNull().default(0),
-  wonSignals: t.integer().notNull().default(0),
-  lostSignals: t.integer().notNull().default(0),
-  blockNumber: t.bigint().notNull(),
-  transactionHash: t.hex().notNull(),
+  total_signals: t.integer().notNull().default(0),
+  active_signals: t.integer().notNull().default(0),
+  won_signals: t.integer().notNull().default(0),
+  lost_signals: t.integer().notNull().default(0),
+  block_number: t.bigint().notNull(),
+  transaction_hash: t.hex().notNull(),
 }));
 
-export const walletAuthorizations = onchainTable(
+export const wallet_authorizations = onchainTable(
   "wallet_authorizations",
   (t) => ({
     id: t.text().primaryKey(),
     fid: t.integer().notNull(),
     wallet: t.hex().notNull(),
-    blockNumber: t.bigint().notNull(),
-    transactionHash: t.hex().notNull(),
+    block_number: t.bigint().notNull(),
+    transaction_hash: t.hex().notNull(),
   })
 );
 
-export const dailySignalCounts = onchainTable("daily_signal_counts", (t) => ({
+export const daily_signal_counts = onchainTable("daily_signal_counts", (t) => ({
   id: t.text().primaryKey(), // Format: "{fid}-{day}"
   fid: t.integer().notNull(),
   day: t.bigint().notNull(), // Day number since deployment
   count: t.integer().notNull(),
-  blockNumber: t.bigint().notNull(),
-  transactionHash: t.hex().notNull(),
+  block_number: t.bigint().notNull(),
+  transaction_hash: t.hex().notNull(),
 }));
 
-export const fidBans = onchainTable("fid_bans", (t) => ({
+export const fid_bans = onchainTable("fid_bans", (t) => ({
   id: t.text().primaryKey(),
   fid: t.integer().notNull(),
   banned: t.boolean().notNull(),
-  blockNumber: t.bigint().notNull(),
-  transactionHash: t.hex().notNull(),
+  block_number: t.bigint().notNull(),
+  transaction_hash: t.hex().notNull(),
 }));
 
-export const walletBans = onchainTable("wallet_bans", (t) => ({
+export const wallet_bans = onchainTable("wallet_bans", (t) => ({
   id: t.text().primaryKey(),
   wallet: t.hex().notNull(),
   banned: t.boolean().notNull(),
-  blockNumber: t.bigint().notNull(),
-  transactionHash: t.hex().notNull(),
+  block_number: t.bigint().notNull(),
+  transaction_hash: t.hex().notNull(),
 }));
 
 export const users = onchainTable("users", (t) => ({
   fid: t.integer().primaryKey(),
   username: t.text(),
-  displayName: t.text(),
-  pfpUrl: t.text(),
-  isVerified: t.boolean().default(false),
-  followerCount: t.integer().default(0),
-  followingCount: t.integer().default(0),
-  mfsScore: t.real().default(0),
-  winRate: t.real().default(0),
-  totalSignals: t.integer().default(0),
-  activeSignals: t.integer().default(0),
-  settledSignals: t.integer().default(0),
-  totalScore: t.real().default(0),
+  display_name: t.text(),
+  pfp_url: t.text(),
+  is_verified: t.boolean().default(false),
+  follower_count: t.integer().default(0),
+  following_count: t.integer().default(0),
+  mfs_score: t.real().default(0),
+  win_rate: t.real().default(0),
+  total_signals: t.integer().default(0),
+  active_signals: t.integer().default(0),
+  settled_signals: t.integer().default(0),
+  total_score: t.real().default(0),
   rank: t.integer(),
-  lastScoreUpdate: t.integer(),
+  last_score_update: t.bigint(),
   role: t.text().default("USER"),
-  isBanned: t.boolean().default(false),
-  bannedAt: t.integer(),
-  notificationsEnabled: t.boolean().default(true),
-  notificationToken: t.text(),
-  notificationUrl: t.text(),
-  lastSignalDate: t.text(),
-  stateOnTheSystem: t.text().default("ACTIVE"),
-  walletAddress: t.hex(),
-  jbmBalance: t.text().default("0"),
-  isSubscriber: t.boolean().default(false),
-  subscriptionExpiresAt: t.integer(),
-  subscribedAt: t.integer(),
-  createdAt: t.integer().notNull(),
-  updatedAt: t.integer().notNull(),
-  lastActiveAt: t.integer(),
+  is_banned: t.boolean().default(false),
+  banned_at: t.bigint(),
+  notifications_enabled: t.boolean().default(true),
+  notification_token: t.text(),
+  notification_url: t.text(),
+  last_signal_date: t.text(),
+  state_on_the_system: t.text().default("ACTIVE"),
+  wallet_address: t.hex(),
+  jbm_balance: t.text().default("0"),
+  is_subscriber: t.boolean().default(false),
+  subscription_expires_at: t.bigint(),
+  subscribed_at: t.bigint(),
+  created_at: t.bigint().notNull(),
+  updated_at: t.bigint().notNull(),
+  last_active_at: t.bigint(),
 }));
 
 export const tokens = onchainTable("tokens", (t) => ({
@@ -101,37 +100,37 @@ export const tokens = onchainTable("tokens", (t) => ({
   categories: t.text(),
   description: t.text(),
   image: t.text(),
-  imageSmall: t.text(),
-  imageThumb: t.text(),
-  marketCapRank: t.integer(),
-  marketData: t.text(),
-  createdAt: t.integer().notNull(),
-  updatedAt: t.integer().notNull(),
+  image_small: t.text(),
+  image_thumb: t.text(),
+  market_cap_rank: t.integer(),
+  market_data: t.text(),
+  created_at: t.bigint().notNull(),
+  updated_at: t.bigint().notNull(),
 }));
 
-export const notificationQueue = onchainTable("notification_queue", (t) => ({
+export const notification_queue = onchainTable("notification_queue", (t) => ({
   id: t.text().primaryKey(),
-  userId: t.integer().notNull(),
+  user_id: t.integer().notNull(),
   type: t.text().notNull(),
-  notificationId: t.text(),
+  notification_id: t.text(),
   title: t.text().notNull(),
   body: t.text().notNull(),
-  targetUrl: t.text(),
+  target_url: t.text(),
   status: t.text().default("PENDING"),
-  retryCount: t.integer().default(0),
-  scheduledFor: t.integer().notNull(),
-  sentAt: t.integer(),
-  errorMessage: t.text(),
-  createdAt: t.integer().notNull(),
-  updatedAt: t.integer().notNull(),
+  retry_count: t.integer().default(0),
+  scheduled_for: t.bigint().notNull(),
+  sent_at: t.bigint(),
+  error_message: t.text(),
+  created_at: t.bigint().notNull(),
+  updated_at: t.bigint().notNull(),
 }));
 
-export const priceSnapshots = onchainTable("price_snapshots", (t) => ({
+export const price_snapshots = onchainTable("price_snapshots", (t) => ({
   id: t.text().primaryKey(),
-  tokenAddress: t.hex().notNull(),
-  marketCap: t.text().notNull(),
+  token_address: t.hex().notNull(),
+  market_cap: t.text().notNull(),
   price: t.text().notNull(),
-  volume24h: t.text(),
-  createdAt: t.integer().notNull(),
-  snapshotAt: t.integer().notNull(),
+  volume_24h: t.text(),
+  created_at: t.bigint().notNull(),
+  snapshot_at: t.bigint().notNull(),
 }));

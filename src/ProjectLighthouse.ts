@@ -12,25 +12,19 @@ import {
 ponder.on("ProjectLighthouseV16:SignalCreated", async ({ event, context }) => {
   const { db } = context;
 
-  // Convert signalId (uint256) to hex string
-  const signalId = `0x${event.args.signalId
-    .toString(16)
-    .padStart(64, "0")}` as `0x${string}`;
-
   // Calculate expiration time
   const expiresAt =
     event.args.timestamp + BigInt(event.args.duration) * BigInt(86400);
 
   await db.insert(signals).values({
-    id: signalId,
+    id: event.transaction.hash,
     fid: Number(event.args.fid),
     ca: event.args.ca,
     direction: event.args.direction,
     duration: Number(event.args.duration),
     timestamp: event.args.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transaction.hash,
-    status: 0, // Active
+    status: 0,
     expiresAt: expiresAt,
   });
 

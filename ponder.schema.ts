@@ -1,6 +1,7 @@
 import { onchainTable } from "ponder";
 
 export const signals = onchainTable("signals", (t) => ({
+  transaction_hash: t.hex().notNull().primaryKey(),
   fid: t.integer().notNull(),
   ca: t.hex().notNull(), // Contract address
   direction: t.boolean().notNull(), // false = DOWN, true = UP
@@ -9,7 +10,6 @@ export const signals = onchainTable("signals", (t) => ({
   block_number: t.bigint().notNull(),
   status: t.integer().notNull().default(0), // 0 = active, 1 = won, 2 = lost
   expires_at: t.bigint().notNull(), // When the signal expires
-  id: t.hex().notNull().primaryKey(),
 }));
 
 export const fid_stats = onchainTable("fid_stats", (t) => ({

@@ -2,11 +2,11 @@ import { ponder } from "ponder:registry";
 import { sql } from "ponder";
 import {
   signals,
-  walletAuthorizations,
-  dailySignalCounts,
-  fidBans,
-  walletBans,
-  fidStats,
+  wallet_authorizations,
+  daily_signal_counts,
+  fid_bans,
+  wallet_bans,
+  fid_stats,
 } from "../ponder.schema";
 
 ponder.on("ProjectLighthouseV16:SignalCreated", async ({ event, context }) => {
@@ -17,15 +17,15 @@ ponder.on("ProjectLighthouseV16:SignalCreated", async ({ event, context }) => {
     event.args.timestamp + BigInt(event.args.duration) * BigInt(86400);
 
   await db.insert(signals).values({
-    id: event.transaction.hash,
+    transaction_hash: event.transaction.hash,
     fid: Number(event.args.fid),
     ca: event.args.ca,
     direction: event.args.direction,
     duration: Number(event.args.duration),
     timestamp: event.args.timestamp,
-    blockNumber: event.block.number,
+    block_number: event.block.number,
     status: 0,
-    expiresAt: expiresAt,
+    expires_at: expiresAt,
   });
 
   // Calculate day from deployment timestamp
@@ -35,24 +35,24 @@ ponder.on("ProjectLighthouseV16:SignalCreated", async ({ event, context }) => {
   const dayId = `${event.args.fid}-${currentDay}`;
 
   // Insert daily signal count
-  await db.insert(dailySignalCounts).values({
+  await db.insert(daily_signal_counts).values({
     id: dayId,
     fid: Number(event.args.fid),
     day: currentDay,
     count: 1,
-    blockNumber: event.block.number,
-    transactionHash: event.transaction.hash,
+    block_number: event.block.number,
+    transaction_hash: event.transaction.hash,
   });
 
   // Insert or update FID stats
-  await db.insert(fidStats).values({
+  await db.insert(fid_stats).values({
     fid: Number(event.args.fid),
-    totalSignals: 1,
-    activeSignals: 1,
-    wonSignals: 0,
-    lostSignals: 0,
-    blockNumber: event.block.number,
-    transactionHash: event.transaction.hash,
+    total_signals: 1,
+    active_signals: 1,
+    won_signals: 0,
+    lost_signals: 0,
+    block_number: event.block.number,
+    transaction_hash: event.transaction.hash,
   });
 });
 
@@ -61,12 +61,12 @@ ponder.on(
   async ({ event, context }) => {
     const { db } = context;
 
-    await db.insert(walletAuthorizations).values({
+    await db.insert(wallet_authorizations).values({
       id: `${event.args.fid}-${event.args.wallet}`,
       fid: Number(event.args.fid),
       wallet: event.args.wallet,
-      blockNumber: event.block.number,
-      transactionHash: event.transaction.hash,
+      block_number: event.block.number,
+      transaction_hash: event.transaction.hash,
     });
   }
 );
@@ -74,47 +74,47 @@ ponder.on(
 ponder.on("ProjectLighthouseV16:FidBanned", async ({ event, context }) => {
   const { db } = context;
 
-  await db.insert(fidBans).values({
+  await db.insert(fid_bans).values({
     id: `${event.args.fid}-${event.block.number}`,
     fid: Number(event.args.fid),
     banned: true,
-    blockNumber: event.block.number,
-    transactionHash: event.transaction.hash,
+    block_number: event.block.number,
+    transaction_hash: event.transaction.hash,
   });
 });
 
 ponder.on("ProjectLighthouseV16:FidUnbanned", async ({ event, context }) => {
   const { db } = context;
 
-  await db.insert(fidBans).values({
+  await db.insert(fid_bans).values({
     id: `${event.args.fid}-${event.block.number}`,
     fid: Number(event.args.fid),
     banned: false,
-    blockNumber: event.block.number,
-    transactionHash: event.transaction.hash,
+    block_number: event.block.number,
+    transaction_hash: event.transaction.hash,
   });
 });
 
 ponder.on("ProjectLighthouseV16:WalletBanned", async ({ event, context }) => {
   const { db } = context;
 
-  await db.insert(walletBans).values({
+  await db.insert(wallet_bans).values({
     id: `${event.args.wallet}-${event.block.number}`,
     wallet: event.args.wallet,
     banned: true,
-    blockNumber: event.block.number,
-    transactionHash: event.transaction.hash,
+    block_number: event.block.number,
+    transaction_hash: event.transaction.hash,
   });
 });
 
 ponder.on("ProjectLighthouseV16:WalletUnbanned", async ({ event, context }) => {
   const { db } = context;
 
-  await db.insert(walletBans).values({
+  await db.insert(wallet_bans).values({
     id: `${event.args.wallet}-${event.block.number}`,
     wallet: event.args.wallet,
     banned: false,
-    blockNumber: event.block.number,
-    transactionHash: event.transaction.hash,
+    block_number: event.block.number,
+    transaction_hash: event.transaction.hash,
   });
 });

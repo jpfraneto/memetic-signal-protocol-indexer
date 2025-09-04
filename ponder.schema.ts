@@ -1,4 +1,4 @@
-import { onchainTable } from "ponder";
+import { onchainTable, relations } from "ponder";
 
 export const signals = onchainTable("signals", (t) => ({
   transaction_hash: t.hex().notNull().primaryKey(),
@@ -6,10 +6,11 @@ export const signals = onchainTable("signals", (t) => ({
   ca: t.hex().notNull(), // Contract address
   direction: t.boolean().notNull(), // false = DOWN, true = UP
   duration: t.integer().notNull(), // Duration in days
-  timestamp: t.bigint().notNull(), // Block timestamp when signal was created
+  timestamp: t.date().notNull(), // Block timestamp when signal was created
   block_number: t.bigint().notNull(),
   status: t.integer().notNull().default(0), // 0 = active, 1 = won, 2 = lost
-  expires_at: t.bigint().notNull(), // When the signal expires
+  expires_at: t.date().notNull(), // When the signal expires
+  mc: t.integer().notNull(), // MC at the time of signal creation
 }));
 
 export const fid_stats = onchainTable("fid_stats", (t) => ({
@@ -36,7 +37,7 @@ export const wallet_authorizations = onchainTable(
 export const daily_signal_counts = onchainTable("daily_signal_counts", (t) => ({
   id: t.text().primaryKey(), // Format: "{fid}-{day}"
   fid: t.integer().notNull(),
-  day: t.bigint().notNull(), // Day number since deployment
+  day: t.integer().notNull(), // Day number since deployment
   count: t.integer().notNull(),
   block_number: t.bigint().notNull(),
   transaction_hash: t.hex().notNull(),
@@ -76,7 +77,7 @@ export const users = onchainTable("users", (t) => ({
   last_score_update: t.bigint(),
   role: t.text().default("USER"),
   is_banned: t.boolean().default(false),
-  banned_at: t.bigint(),
+  banned_at: t.date(),
   notifications_enabled: t.boolean().default(true),
   notification_token: t.text(),
   notification_url: t.text(),
@@ -85,15 +86,16 @@ export const users = onchainTable("users", (t) => ({
   wallet_address: t.hex(),
   jbm_balance: t.text().default("0"),
   is_subscriber: t.boolean().default(false),
-  subscription_expires_at: t.bigint(),
-  subscribed_at: t.bigint(),
-  created_at: t.bigint().notNull(),
-  updated_at: t.bigint().notNull(),
-  last_active_at: t.bigint(),
+  subscription_expires_at: t.date(),
+  subscribed_at: t.date(),
+  created_at: t.date().notNull(),
+  updated_at: t.date().notNull(),
+  last_active_at: t.date(),
 }));
 
 export const tokens = onchainTable("tokens", (t) => ({
   ca: t.hex().primaryKey(),
+  coin_id: t.text(),
   name: t.text(),
   symbol: t.text(),
   decimals: t.integer(),
@@ -104,8 +106,8 @@ export const tokens = onchainTable("tokens", (t) => ({
   image_thumb: t.text(),
   market_cap_rank: t.integer(),
   market_data: t.text(),
-  created_at: t.bigint().notNull(),
-  updated_at: t.bigint().notNull(),
+  created_at: t.date().notNull(),
+  updated_at: t.date().notNull(),
 }));
 
 export const notification_queue = onchainTable("notification_queue", (t) => ({
@@ -118,11 +120,11 @@ export const notification_queue = onchainTable("notification_queue", (t) => ({
   target_url: t.text(),
   status: t.text().default("PENDING"),
   retry_count: t.integer().default(0),
-  scheduled_for: t.bigint().notNull(),
-  sent_at: t.bigint(),
+  scheduled_for: t.date().notNull(),
+  sent_at: t.date(),
   error_message: t.text(),
-  created_at: t.bigint().notNull(),
-  updated_at: t.bigint().notNull(),
+  created_at: t.date().notNull(),
+  updated_at: t.date().notNull(),
 }));
 
 export const price_snapshots = onchainTable("price_snapshots", (t) => ({
@@ -131,6 +133,77 @@ export const price_snapshots = onchainTable("price_snapshots", (t) => ({
   market_cap: t.text().notNull(),
   price: t.text().notNull(),
   volume_24h: t.text(),
-  created_at: t.bigint().notNull(),
-  snapshot_at: t.bigint().notNull(),
+  created_at: t.date().notNull(),
+  snapshot_at: t.date().notNull(),
 }));
+
+// Relations
+export const usersRelations = relations(users, ({ one, many }) => ({
+  signals: many(signals),
+  fid_stats: one(fid_stats, {
+    fields: [users.fid],
+    references: [fid_stats.fid],
+  }),
+  wallet_authorizations: many(wallet_authorizations),
+  daily_signal_counts: many(daily_signal_counts),
+  fid_bans: many(fid_bans),
+  notifications: many(notification_queue),
+}));
+
+export const signalsRelations = relations(signals, ({ one }) => ({
+  user: one(users, { fields: [signals.fid], references: [users.fid] }),
+  token: one(tokens, { fields: [signals.ca], references: [tokens.ca] }),
+}));
+
+export const tokensRelations = relations(tokens, ({ many }) => ({
+  signals: many(signals),
+  price_snapshots: many(price_snapshots),
+}));
+
+export const fidStatsRelations = relations(fid_stats, ({ one }) => ({
+  user: one(users, { fields: [fid_stats.fid], references: [users.fid] }),
+}));
+
+export const walletAuthorizationsRelations = relations(
+  wallet_authorizations,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [wallet_authorizations.fid],
+      references: [users.fid],
+    }),
+  })
+);
+
+export const dailySignalCountsRelations = relations(
+  daily_signal_counts,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [daily_signal_counts.fid],
+      references: [users.fid],
+    }),
+  })
+);
+
+export const fidBansRelations = relations(fid_bans, ({ one }) => ({
+  user: one(users, { fields: [fid_bans.fid], references: [users.fid] }),
+}));
+
+export const notificationQueueRelations = relations(
+  notification_queue,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [notification_queue.user_id],
+      references: [users.fid],
+    }),
+  })
+);
+
+export const priceSnapshotsRelations = relations(
+  price_snapshots,
+  ({ one }) => ({
+    token: one(tokens, {
+      fields: [price_snapshots.token_address],
+      references: [tokens.ca],
+    }),
+  })
+);

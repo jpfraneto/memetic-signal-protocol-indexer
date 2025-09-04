@@ -23,13 +23,10 @@ export interface User {
   lastSignalDate?: string;
   stateOnTheSystem: string;
   walletAddress?: string;
-  jbmBalance: string;
-  isSubscriber: boolean;
-  subscriptionExpiresAt?: number;
-  subscribedAt?: number;
-  createdAt: number;
-  updatedAt: number;
-  lastActiveAt?: number;
+  subscribedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  lastActiveAt?: Date;
 }
 
 export interface Token {
@@ -44,8 +41,8 @@ export interface Token {
   imageThumb?: string;
   marketCapRank?: number;
   marketData?: string;
-  createdAt: number;
-  updatedAt: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface NotificationQueue {
@@ -58,11 +55,11 @@ export interface NotificationQueue {
   targetUrl?: string;
   status: string;
   retryCount: number;
-  scheduledFor: number;
-  sentAt?: number;
+  scheduledFor: Date;
+  sentAt?: Date;
   errorMessage?: string;
-  createdAt: number;
-  updatedAt: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface PriceSnapshot {
@@ -71,6 +68,6 @@ export interface PriceSnapshot {
   marketCap: string;
   price: string;
   volume24h?: string;
-  createdAt: number;
-  snapshotAt: number;
+  createdAt: Date;
+  snapshotAt: Date;
 }

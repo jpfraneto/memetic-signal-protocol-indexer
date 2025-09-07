@@ -15,10 +15,6 @@ ponder.on("ProjectLighthouseV16:SignalCreated", async ({ event, context }) => {
   const now = new Date();
   const { db } = context;
 
-  // Calculate expiration time
-  const expiresAt =
-    event.args.timestamp + BigInt(event.args.duration) * BigInt(86400);
-
   const [token_info, mc_when_signaled] = await fetchTokenInformation(
     event.args.ca,
     new Date(Number(event.args.timestamp))
@@ -27,6 +23,7 @@ ponder.on("ProjectLighthouseV16:SignalCreated", async ({ event, context }) => {
   await db
     .insert(tokens)
     .values({
+      coingecko_id: token_info.id,
       ca: event.args.ca,
       name: token_info.name,
       symbol: token_info.symbol,

@@ -30,6 +30,7 @@ export interface User {
 }
 
 export interface Token {
+  id?: string;
   ca: string;
   name?: string;
   symbol?: string;

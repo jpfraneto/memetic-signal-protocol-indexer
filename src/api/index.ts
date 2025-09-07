@@ -3,11 +3,11 @@ import { Hono } from "hono";
 import { sql } from "ponder";
 import {
   signals,
-  walletAuthorizations,
-  dailySignalCounts,
-  fidBans,
-  walletBans,
-  fidStats,
+  wallet_authorizations,
+  daily_signal_counts,
+  fid_bans,
+  wallet_bans,
+  fid_stats,
 } from "ponder:schema";
 
 const app = new Hono();
@@ -56,7 +56,7 @@ app.get("/system-state", apiKeyAuth, async (c) => {
     // Get authorized wallets count
     const authorizedWalletsResult = await db
       .select({ count: sql`count(*)` })
-      .from(walletAuthorizations);
+      .from(wallet_authorizations);
 
     const authorizedWalletsCount = Number(
       authorizedWalletsResult[0]?.count || 0
@@ -65,7 +65,7 @@ app.get("/system-state", apiKeyAuth, async (c) => {
     // Get banned FIDs count
     const bannedFidsResult = await db
       .select({ count: sql`count(distinct fid)` })
-      .from(fidBans)
+      .from(fid_bans)
       .where(sql`banned = true`);
 
     const bannedFidsCount = Number(bannedFidsResult[0]?.count || 0);
@@ -73,7 +73,7 @@ app.get("/system-state", apiKeyAuth, async (c) => {
     // Get banned wallets count
     const bannedWalletsResult = await db
       .select({ count: sql`count(distinct wallet)` })
-      .from(walletBans)
+      .from(wallet_bans)
       .where(sql`banned = true`);
 
     const bannedWalletsCount = Number(bannedWalletsResult[0]?.count || 0);
@@ -82,7 +82,7 @@ app.get("/system-state", apiKeyAuth, async (c) => {
     const currentDay = Math.floor((Date.now() / 1000 - 1735689600) / 86400); // Using deployment timestamp
     const todaySignalsResult = await db
       .select({ count: sql`sum(count)` })
-      .from(dailySignalCounts)
+      .from(daily_signal_counts)
       .where(sql`day = ${currentDay}`);
 
     const todaySignalsCount = Number(todaySignalsResult[0]?.count || 0);

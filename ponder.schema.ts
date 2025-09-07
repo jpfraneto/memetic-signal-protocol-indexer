@@ -1,15 +1,19 @@
 import { onchainTable, relations } from "ponder";
 
 export const signals = onchainTable("signals", (t) => ({
-  transaction_hash: t.hex().notNull().primaryKey(),
+  signal_id: t.integer().notNull().primaryKey(), // Signal ID from contract
+  transaction_hash: t.hex().notNull(),
   fid: t.integer().notNull(),
   ca: t.hex().notNull(), // Contract address
   direction: t.boolean().notNull(), // false = DOWN, true = UP
-  duration: t.integer().notNull(), // Duration in days
+  duration_days: t.integer().notNull(), // Duration in days (uint32)
+  created_at: t.bigint().notNull(), // uint64 timestamp from contract
+  expires_at: t.bigint().notNull(), // uint64 timestamp from contract
   timestamp: t.date().notNull(), // Block timestamp when signal was created
   block_number: t.bigint().notNull(),
-  status: t.integer().notNull().default(0), // 0 = active, 1 = won, 2 = lost
-  expires_at: t.date().notNull(), // When the signal expires
+  resolved: t.boolean().notNull().default(false), // Whether signal has been resolved
+  mfs_applied: t.text().default("0"), // int256 MFS delta applied
+  status: t.integer().notNull().default(0), // 0 = active, 1 = won, 2 = lost (legacy)
   mc: t.integer().notNull(), // MC at the time of signal creation
 }));
 
@@ -59,6 +63,33 @@ export const wallet_bans = onchainTable("wallet_bans", (t) => ({
   transaction_hash: t.hex().notNull(),
 }));
 
+export const signal_resolutions = onchainTable("signal_resolutions", (t) => ({
+  id: t.text().primaryKey(), // "{signalId}-{blockNumber}"
+  signal_id: t.integer().notNull(),
+  fid: t.integer().notNull(),
+  mfs_delta: t.text().notNull(), // int256 as string
+  new_total_mfs: t.text().notNull(), // int256 as string
+  block_number: t.bigint().notNull(),
+  transaction_hash: t.hex().notNull(),
+}));
+
+export const fid_total_mfs = onchainTable("fid_total_mfs", (t) => ({
+  fid: t.integer().primaryKey(),
+  total_mfs: t.text().notNull().default("0"), // int256 as string
+  last_updated_block: t.bigint().notNull(),
+  last_updated_tx: t.hex().notNull(),
+}));
+
+export const wallet_unauthorizations = onchainTable(
+  "wallet_unauthorizations",
+  (t) => ({
+    id: t.text().primaryKey(),
+    wallet: t.hex().notNull(),
+    block_number: t.bigint().notNull(),
+    transaction_hash: t.hex().notNull(),
+  })
+);
+
 export const users = onchainTable("users", (t) => ({
   fid: t.integer().primaryKey(),
   username: t.text(),
@@ -95,7 +126,7 @@ export const users = onchainTable("users", (t) => ({
 
 export const tokens = onchainTable("tokens", (t) => ({
   ca: t.hex().primaryKey(),
-  coin_id: t.text(),
+  coingecko_id: t.text(),
   name: t.text(),
   symbol: t.text(),
   decimals: t.integer(),
@@ -205,5 +236,33 @@ export const priceSnapshotsRelations = relations(
       fields: [price_snapshots.token_address],
       references: [tokens.ca],
     }),
+  })
+);
+
+export const signalResolutionsRelations = relations(
+  signal_resolutions,
+  ({ one }) => ({
+    signal: one(signals, {
+      fields: [signal_resolutions.signal_id],
+      references: [signals.signal_id],
+    }),
+    user: one(users, {
+      fields: [signal_resolutions.fid],
+      references: [users.fid],
+    }),
+  })
+);
+
+export const fidTotalMfsRelations = relations(fid_total_mfs, ({ one }) => ({
+  user: one(users, {
+    fields: [fid_total_mfs.fid],
+    references: [users.fid],
+  }),
+}));
+
+export const walletUnauthorizationsRelations = relations(
+  wallet_unauthorizations,
+  ({ one }) => ({
+    // Note: Can't directly relate to users since we only have wallet address
   })
 );

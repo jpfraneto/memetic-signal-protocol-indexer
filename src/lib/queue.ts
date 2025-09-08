@@ -1,5 +1,4 @@
 import { Queue, ConnectionOptions } from "bullmq";
-import Redis from "ioredis";
 
 // Job data interfaces
 export interface SignalResolutionJobData {

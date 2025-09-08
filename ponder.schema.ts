@@ -4,7 +4,7 @@ export const signals = onchainTable("signals", (t) => ({
   signal_id: t.integer().notNull().primaryKey(), // Signal ID from contract
   transaction_hash: t.hex().notNull(),
   fid: t.integer().notNull(),
-  token: t.hex().notNull(), // Token contract address being predicted
+  ca: t.hex().notNull(), // Token contract address being predicted
   direction: t.boolean().notNull(), // false = DOWN, true = UP
   duration_days: t.integer().notNull(), // Duration in days (uint32)
   entry_market_cap: t.text().notNull(), // Market cap in USD when signal created (uint256)
@@ -219,7 +219,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 
 export const signalsRelations = relations(signals, ({ one }) => ({
   user: one(users, { fields: [signals.fid], references: [users.fid] }),
-  token: one(tokens, { fields: [signals.token], references: [tokens.ca] }),
+  token: one(tokens, { fields: [signals.ca], references: [tokens.ca] }),
 }));
 
 export const tokensRelations = relations(tokens, ({ many }) => ({

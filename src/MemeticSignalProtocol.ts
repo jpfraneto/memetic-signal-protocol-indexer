@@ -53,7 +53,7 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
     signal_id: signalId,
     transaction_hash: event.transaction.hash,
     fid: Number(event.args.fid),
-    token: event.args.token,
+    ca: event.args.token,
     direction: event.args.direction,
     duration_days: Number(event.args.durationDays),
     entry_market_cap: event.args.entryMarketCap.toString(),

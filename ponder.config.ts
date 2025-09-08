@@ -1,6 +1,6 @@
 import { createConfig } from "ponder";
 
-import { ProjectLighthouseV19Abi } from "./abis/ProjectLighthouseV19Abi";
+import { MemeticSignalProtocolAbi } from "./abis/MemeticSignalProtocolAbi";
 
 export default createConfig({
   database: {
@@ -10,12 +10,13 @@ export default createConfig({
   chains: {
     base: { id: 8453, rpc: process.env.PONDER_RPC_URL_1 },
   },
+
   contracts: {
-    ProjectLighthouseV19: {
-      abi: ProjectLighthouseV19Abi,
-      address: "0x74FFfF39a370f67329F3C85582A2d55e3A36DFFC",
+    MemeticSignalProtocol: {
+      abi: MemeticSignalProtocolAbi,
+      address: "0x241dc35F698d3bA887Fffc30A6d6bf0E05FF46D8",
       chain: "base",
-      startBlock: 35227708,
+      startBlock: 35227708, // Update this to the actual deployment block
     },
   },
 });

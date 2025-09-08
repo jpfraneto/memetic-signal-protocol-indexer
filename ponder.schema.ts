@@ -4,17 +4,17 @@ export const signals = onchainTable("signals", (t) => ({
   signal_id: t.integer().notNull().primaryKey(), // Signal ID from contract
   transaction_hash: t.hex().notNull(),
   fid: t.integer().notNull(),
-  ca: t.hex().notNull(), // Contract address
+  token: t.hex().notNull(), // Token contract address being predicted
   direction: t.boolean().notNull(), // false = DOWN, true = UP
   duration_days: t.integer().notNull(), // Duration in days (uint32)
+  entry_market_cap: t.text().notNull(), // Market cap in USD when signal created (uint256)
   created_at: t.bigint().notNull(), // uint64 timestamp from contract
   expires_at: t.bigint().notNull(), // uint64 timestamp from contract
   timestamp: t.date().notNull(), // Block timestamp when signal was created
   block_number: t.bigint().notNull(),
   resolved: t.boolean().notNull().default(false), // Whether signal has been resolved
-  mfs_applied: t.text().default("0"), // int256 MFS delta applied
-  status: t.integer().notNull().default(0), // 0 = active, 1 = won, 2 = lost (legacy)
-  mc: t.integer().notNull(), // MC at the time of signal creation
+  mfs_delta: t.text().default("0"), // int256 MFS delta applied
+  manually_updated: t.boolean().notNull().default(false), // Whether owner has manually updated this signal
 }));
 
 export const fid_stats = onchainTable("fid_stats", (t) => ({
@@ -73,6 +73,23 @@ export const signal_resolutions = onchainTable("signal_resolutions", (t) => ({
   transaction_hash: t.hex().notNull(),
 }));
 
+export const signal_manual_updates = onchainTable(
+  "signal_manual_updates",
+  (t) => ({
+    id: t.text().primaryKey(), // "{signalId}-{blockNumber}"
+    signal_id: t.integer().notNull(),
+    fid: t.integer().notNull(),
+    old_entry_market_cap: t.text().notNull(), // uint256 as string
+    new_entry_market_cap: t.text().notNull(), // uint256 as string
+    old_mfs_delta: t.text().notNull(), // int256 as string
+    new_mfs_delta: t.text().notNull(), // int256 as string
+    new_total_mfs: t.text().notNull(), // int256 as string
+    reason: t.text().notNull(), // Human-readable reason for the manual update
+    block_number: t.bigint().notNull(),
+    transaction_hash: t.hex().notNull(),
+  })
+);
+
 export const fid_total_mfs = onchainTable("fid_total_mfs", (t) => ({
   fid: t.integer().primaryKey(),
   total_mfs: t.text().notNull().default("0"), // int256 as string
@@ -89,6 +106,25 @@ export const wallet_unauthorizations = onchainTable(
     transaction_hash: t.hex().notNull(),
   })
 );
+
+export const backend_signer_updates = onchainTable(
+  "backend_signer_updates",
+  (t) => ({
+    id: t.text().primaryKey(), // "{blockNumber}-{transactionIndex}"
+    old_signer: t.hex().notNull(),
+    new_signer: t.hex().notNull(),
+    block_number: t.bigint().notNull(),
+    transaction_hash: t.hex().notNull(),
+  })
+);
+
+export const resolver_updates = onchainTable("resolver_updates", (t) => ({
+  id: t.text().primaryKey(), // "{blockNumber}-{transactionIndex}"
+  old_resolver: t.hex().notNull(),
+  new_resolver: t.hex().notNull(),
+  block_number: t.bigint().notNull(),
+  transaction_hash: t.hex().notNull(),
+}));
 
 export const users = onchainTable("users", (t) => ({
   fid: t.integer().primaryKey(),
@@ -183,7 +219,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 
 export const signalsRelations = relations(signals, ({ one }) => ({
   user: one(users, { fields: [signals.fid], references: [users.fid] }),
-  token: one(tokens, { fields: [signals.ca], references: [tokens.ca] }),
+  token: one(tokens, { fields: [signals.token], references: [tokens.ca] }),
 }));
 
 export const tokensRelations = relations(tokens, ({ many }) => ({
@@ -264,5 +300,33 @@ export const walletUnauthorizationsRelations = relations(
   wallet_unauthorizations,
   ({ one }) => ({
     // Note: Can't directly relate to users since we only have wallet address
+  })
+);
+
+export const signalManualUpdatesRelations = relations(
+  signal_manual_updates,
+  ({ one }) => ({
+    signal: one(signals, {
+      fields: [signal_manual_updates.signal_id],
+      references: [signals.signal_id],
+    }),
+    user: one(users, {
+      fields: [signal_manual_updates.fid],
+      references: [users.fid],
+    }),
+  })
+);
+
+export const backendSignerUpdatesRelations = relations(
+  backend_signer_updates,
+  ({ one }) => ({
+    // No direct relations needed for admin updates
+  })
+);
+
+export const resolverUpdatesRelations = relations(
+  resolver_updates,
+  ({ one }) => ({
+    // No direct relations needed for admin updates
   })
 );

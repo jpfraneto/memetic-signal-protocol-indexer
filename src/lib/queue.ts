@@ -15,7 +15,7 @@ export type JobType = "RESOLVE_SINGLE_SIGNAL";
 // Parse Redis connection from REDIS_URL
 function getRedisConnection(): ConnectionOptions {
   const redisUrl = process.env.REDIS_URL;
-  
+
   if (!redisUrl) {
     throw new Error("REDIS_URL environment variable is required");
   }
@@ -24,8 +24,9 @@ function getRedisConnection(): ConnectionOptions {
   // Expected format: redis://user:pass@host:port or rediss://user:pass@host:port
   try {
     const url = new URL(redisUrl);
-    
+
     return {
+      family: 0,
       host: url.hostname,
       port: parseInt(url.port) || 6379,
       username: url.username || undefined,
@@ -36,7 +37,7 @@ function getRedisConnection(): ConnectionOptions {
       enableReadyCheck: false,
       lazyConnect: true,
       // Handle TLS for rediss:// URLs
-      ...(url.protocol === 'rediss:' && { tls: {} }),
+      ...(url.protocol === "rediss:" && { tls: {} }),
     };
   } catch (error) {
     console.error("Failed to parse REDIS_URL:", error);

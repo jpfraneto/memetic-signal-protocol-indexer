@@ -56,13 +56,13 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
     ca: event.args.token,
     direction: event.args.direction,
     duration_days: Number(event.args.durationDays),
-    entry_market_cap: event.args.entryMarketCap.toString(),
+    entry_market_cap: Number(event.args.entryMarketCap),
     created_at: event.args.createdAt,
     expires_at: event.args.expiresAt,
     timestamp: now.toISOString(),
     block_number: event.block.number,
     resolved: false,
-    mfs_delta: "0",
+    mfs_delta: 0,
     manually_updated: false,
   });
 
@@ -162,7 +162,7 @@ ponder.on(
     // Update the signal as resolved
     await db.update(signals, { signal_id: Number(event.args.signalId) }).set({
       resolved: true,
-      mfs_delta: event.args.mfsDelta.toString(),
+      mfs_delta: Number(event.args.mfsDelta),
     });
 
     // Insert resolution record
@@ -170,7 +170,7 @@ ponder.on(
       id: `${event.args.signalId}-${event.block.number}`,
       signal_id: Number(event.args.signalId),
       fid: Number(event.args.fid),
-      mfs_delta: event.args.mfsDelta.toString(),
+      mfs_delta: Number(event.args.mfsDelta),
       new_total_mfs: event.args.newTotalMFS.toString(),
       block_number: event.block.number,
       transaction_hash: event.transaction.hash,
@@ -247,8 +247,8 @@ ponder.on(
     // Update the signal with manual update flag
     await db.update(signals, { signal_id: Number(event.args.signalId) }).set({
       manually_updated: true,
-      entry_market_cap: event.args.newEntryMarketCap.toString(),
-      mfs_delta: event.args.newMfsDelta.toString(),
+      entry_market_cap: Number(event.args.newEntryMarketCap),
+      mfs_delta: Number(event.args.newMfsDelta),
     });
 
     // Insert manual update record
@@ -256,11 +256,11 @@ ponder.on(
       id: `${event.args.signalId}-${event.block.number}`,
       signal_id: Number(event.args.signalId),
       fid: Number(event.args.fid),
-      old_entry_market_cap: event.args.oldEntryMarketCap.toString(),
-      new_entry_market_cap: event.args.newEntryMarketCap.toString(),
-      old_mfs_delta: event.args.oldMfsDelta.toString(),
-      new_mfs_delta: event.args.newMfsDelta.toString(),
-      new_total_mfs: event.args.newTotalMFS.toString(),
+      old_entry_market_cap: Number(event.args.oldEntryMarketCap),
+      new_entry_market_cap: Number(event.args.newEntryMarketCap),
+      old_mfs_delta: Number(event.args.oldMfsDelta),
+      new_mfs_delta: Number(event.args.newMfsDelta),
+      new_total_mfs: Number(event.args.newTotalMFS),
       reason: event.args.reason,
       block_number: event.block.number,
       transaction_hash: event.transaction.hash,

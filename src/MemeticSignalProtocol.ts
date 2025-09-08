@@ -16,7 +16,6 @@ import {
   resolver_updates,
 } from "../ponder.schema";
 import { fetchTokenInformation } from "./lib/functions";
-import { signalResolutionQueue } from "./lib/queue";
 
 ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
   const now = new Date();
@@ -86,42 +85,6 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
       transaction_hash: event.transaction.hash,
     })
     .onConflictDoNothing();
-
-  // Schedule signal resolution job
-  try {
-    const delay = Number(event.args.expiresAt) * 1000 - Date.now();
-
-    if (delay > 0) {
-      await signalResolutionQueue.add(
-        "RESOLVE_SINGLE_SIGNAL",
-        {
-          signalId: signalId,
-          tokenAddress: event.args.token,
-          expiresAt: Number(event.args.expiresAt),
-          fid: Number(event.args.fid),
-          transactionHash: event.transaction.hash,
-        },
-        {
-          delay,
-          jobId: `signal-${signalId}`,
-          removeOnComplete: true,
-          removeOnFail: false,
-        }
-      );
-      console.log(
-        `Scheduled resolution for signal ${signalId} in ${Math.round(
-          delay / 1000
-        )}s`
-      );
-    } else {
-      console.warn(
-        `Signal ${signalId} already expired, backend fallback will handle`
-      );
-    }
-  } catch (error) {
-    console.error(`Failed to schedule signal ${signalId}:`, error);
-    // Continue processing - backend fallback cron will catch missed signals
-  }
 });
 
 ponder.on(

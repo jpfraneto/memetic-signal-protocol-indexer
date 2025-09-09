@@ -259,7 +259,8 @@ ponder.on(
   "MemeticSignalProtocol:SignalResolved",
   async ({ event, context }) => {
     const { db } = context;
-
+    console.log("THE SIGNAL RESOLVED EVENT WAS TRIGGERED", event);
+    return;
     // Update the signal as resolved
     await db.update(signals, { signal_id: Number(event.args.signalId) }).set({
       resolved: true,

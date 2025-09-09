@@ -131,7 +131,7 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
       image: token_info.image,
       image_small: token_info.imageSmall,
       image_thumb: token_info.imageThumb,
-      market_cap_rank: mc_when_signaled,
+      market_cap_rank: Math.floor(Number(mc_when_signaled)),
       market_data: token_info.marketData,
       created_at: now.toISOString(),
       updated_at: now.toISOString(),

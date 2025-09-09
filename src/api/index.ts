@@ -306,4 +306,20 @@ app.get("/users/:fid/signals", apiKeyAuth, async (c) => {
   }
 });
 
+// Get last 50 signals (open API - no authentication required)
+app.get("/signals", async (c) => {
+  try {
+    const recentSignals = await db
+      .select()
+      .from(signals)
+      .orderBy(sql`expires_at DESC`)
+      .limit(50);
+
+    return c.json({ signals: recentSignals });
+  } catch (error) {
+    console.error("Error fetching signals:", error);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
 export default app;

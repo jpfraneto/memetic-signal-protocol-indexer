@@ -21,7 +21,9 @@ import { fetchTokenInformation, fetchUserFromNeynar } from "./lib/functions";
 ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
   const now = new Date();
   const { db } = context;
-  console.log(`[SignalCreated] Processing signal ${event.args.signalId} for FID ${event.args.fid}`);
+  console.log(
+    `[SignalCreated] Processing signal ${event.args.signalId} for FID ${event.args.fid}`
+  );
 
   console.log(`[SignalCreated] Fetching token info for ${event.args.token}`);
   const [token_info, mc_when_signaled] = await fetchTokenInformation(
@@ -33,12 +35,18 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
     `PROCESSING TOKEN: ${token_info.name}, SIGNALED BY: ${event.args.fid}. ITS SIGNALING MC IS ${mc_when_signaled}Z`
   );
 
-  console.log(`[SignalCreated] Fetching user data from Neynar for FID ${event.args.fid}`);
+  console.log(
+    `[SignalCreated] Fetching user data from Neynar for FID ${event.args.fid}`
+  );
   const userFromNeynar = await fetchUserFromNeynar(Number(event.args.fid));
 
   // Upsert user data if we got it from Neynar
   if (userFromNeynar) {
-    console.log(`[SignalCreated] Upserting user data for ${userFromNeynar.username || 'unknown'}`);
+    console.log(
+      `[SignalCreated] Upserting user data for ${
+        userFromNeynar.username || "unknown"
+      }`
+    );
     await db
       .insert(users)
       .values({
@@ -102,10 +110,14 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
         last_active_at: now.toISOString(),
       });
   } else {
-    console.log(`[SignalCreated] No user data found in Neynar for FID ${event.args.fid}`);
+    console.log(
+      `[SignalCreated] No user data found in Neynar for FID ${event.args.fid}`
+    );
   }
 
-  console.log(`[SignalCreated] Inserting token ${token_info.symbol} with MC rank ${mc_when_signaled}`);
+  console.log(
+    `[SignalCreated] Inserting token ${token_info.symbol} with MC rank ${mc_when_signaled}`
+  );
   await db
     .insert(tokens)
     .values({
@@ -128,7 +140,9 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
 
   // The signalId should be the first indexed parameter in SignalCreated event
   const signalId = Number(event.args.signalId);
-  console.log(`[SignalCreated] Creating signal ${signalId} - ${event.args.direction} ${event.args.durationDays}d`);
+  console.log(
+    `[SignalCreated] Creating signal ${signalId} - ${event.args.direction} ${event.args.durationDays}d`
+  );
 
   await db.insert(signals).values({
     signal_id: signalId,
@@ -153,7 +167,9 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
     (now.getTime() - deploymentTimestamp) / 86400000
   );
   const dayId = `${event.args.fid}-${currentDay}`;
-  console.log(`[SignalCreated] Updating daily count for FID ${event.args.fid} day ${currentDay}`);
+  console.log(
+    `[SignalCreated] Updating daily count for FID ${event.args.fid} day ${currentDay}`
+  );
 
   // Insert daily signal count
   await db
@@ -167,7 +183,9 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
       transaction_hash: event.transaction.hash,
     })
     .onConflictDoNothing();
-  console.log(`[SignalCreated] Successfully processed signal ${signalId} for ${token_info.symbol}`);
+  console.log(
+    `[SignalCreated] Successfully processed signal ${signalId} for ${token_info.symbol}`
+  );
 });
 
 ponder.on(

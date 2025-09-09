@@ -24,7 +24,7 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
 
   const [token_info, mc_when_signaled] = await fetchTokenInformation(
     event.args.token,
-    new Date(Number(event.block.timestamp))
+    new Date(Number(event.block.timestamp) * 1000)
   );
 
   console.log(

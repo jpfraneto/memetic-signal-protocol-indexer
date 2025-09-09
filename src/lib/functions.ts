@@ -302,8 +302,8 @@ export async function fetchUserFromNeynar(fid: number): Promise<any> {
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        "x-api-key": process.env.NEYNAR_API_KEY || "",
-        "x-neynar-experimental": "false",
+        "api_key": process.env.NEYNAR_API_KEY || "",
+        "accept": "application/json",
       },
     });
 

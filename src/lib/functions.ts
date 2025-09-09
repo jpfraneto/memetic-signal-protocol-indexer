@@ -75,7 +75,12 @@ async function fetchHistoricalMarketData(
     if (response.ok) {
       const data = (await response.json()) as any;
 
-      if (data.prices && data.prices.length > 0 && data.market_caps && data.market_caps.length > 0) {
+      if (
+        data.prices &&
+        data.prices.length > 0 &&
+        data.market_caps &&
+        data.market_caps.length > 0
+      ) {
         // Find the data point closest to our target timestamp
         let closestPrice = data.prices[0];
         let closestMarketCap = data.market_caps[0];
@@ -87,7 +92,7 @@ async function fetchHistoricalMarketData(
           const pricePoint = data.prices[i];
           const marketCapPoint = data.market_caps[i];
           const timeDiff = Math.abs(pricePoint[0] - unixTimestamp * 1000);
-          
+
           if (timeDiff < closestTimeDiff) {
             closestPrice = pricePoint;
             closestMarketCap = marketCapPoint;
@@ -99,10 +104,10 @@ async function fetchHistoricalMarketData(
           `Historical data found for ${coinId} at ${timestamp}:`,
           `Price: ${closestPrice[1]}, Market Cap: ${closestMarketCap[1]}`
         );
-        
+
         return {
           price: closestPrice[1],
-          marketCap: closestMarketCap[1]
+          marketCap: closestMarketCap[1],
         };
       }
     } else if (response.status === 429) {
@@ -116,7 +121,10 @@ async function fetchHistoricalMarketData(
     );
     return { price: 0, marketCap: 0 };
   } catch (error) {
-    console.error(`Failed to fetch historical market data for ${coinId}:`, error);
+    console.error(
+      `Failed to fetch historical market data for ${coinId}:`,
+      error
+    );
     return { price: 0, marketCap: 0 };
   }
 }
@@ -220,20 +228,19 @@ export async function fetchTokenInformation(
       }
     }
 
-    // Step 3: Get historical market data if we have a CoinGecko coin ID
+    // Step 3: Get historical market data ONLY if we have a CoinGecko coin ID
     let historicalPrice = 0;
     let marketCapAtSignal = 0;
-    
+
     if (coinData?.id) {
-      const historicalData = await fetchHistoricalMarketData(coinData.id, timestamp);
+      const historicalData = await fetchHistoricalMarketData(
+        coinData.id,
+        timestamp
+      );
       historicalPrice = historicalData.price;
       marketCapAtSignal = historicalData.marketCap;
-    } else if (coinData?.market_data?.current_price?.usd) {
-      // Fallback to current price/market cap if no historical data available
-      historicalPrice = coinData.market_data.current_price.usd;
-      marketCapAtSignal = coinData.market_data.market_cap?.usd || 0;
-      console.log(`Using current market data as fallback - Price: ${historicalPrice}, Market Cap: ${marketCapAtSignal}`);
     }
+    // NO FALLBACK - if no historical data found, leave as 0
 
     // Step 5: Build token object
     const token: Token = {
@@ -302,8 +309,8 @@ export async function fetchUserFromNeynar(fid: number): Promise<any> {
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        "api_key": process.env.NEYNAR_API_KEY || "",
-        "accept": "application/json",
+        api_key: process.env.NEYNAR_API_KEY || "",
+        accept: "application/json",
       },
     });
 

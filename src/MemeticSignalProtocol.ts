@@ -14,8 +14,9 @@ import {
   signal_manual_updates,
   backend_signer_updates,
   resolver_updates,
+  users,
 } from "../ponder.schema";
-import { fetchTokenInformation } from "./lib/functions";
+import { fetchTokenInformation, fetchUserFromNeynar } from "./lib/functions";
 
 ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
   const now = new Date();
@@ -23,8 +24,80 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
 
   const [token_info, mc_when_signaled] = await fetchTokenInformation(
     event.args.token,
-    new Date(Number(event.args.createdAt) * 1000) // Contract uses uint64 timestamp
+    new Date(Number(event.block.timestamp))
   );
+
+  console.log(
+    `PROCESSING TOKEN: ${token_info.name}, SIGNALED BY: ${event.args.fid}. ITS SIGNALING MC IS ${mc_when_signaled}Z`
+  );
+
+  const userFromNeynar = await fetchUserFromNeynar(Number(event.args.fid));
+
+  // Upsert user data if we got it from Neynar
+  if (userFromNeynar) {
+    await db
+      .insert(users)
+      .values({
+        fid: Number(event.args.fid),
+        username: userFromNeynar.username || null,
+        display_name: userFromNeynar.display_name || null,
+        pfp_url: userFromNeynar.pfp_url || null,
+        is_verified:
+          userFromNeynar.verifications &&
+          userFromNeynar.verifications.length > 0,
+        follower_count: userFromNeynar.follower_count || 0,
+        following_count: userFromNeynar.following_count || 0,
+        mfs_score: 0, // Will be updated when signals are resolved
+        win_rate: 0, // Will be calculated based on resolved signals
+        total_signals: 0, // Will be incremented as signals are created
+        active_signals: 0, // Will be tracked as signals are created/resolved
+        settled_signals: 0, // Will be incremented when signals are resolved
+        total_score: 0, // Will be updated with MFS scores
+        rank: null, // Will be calculated based on total MFS
+        last_score_update: null,
+        role: "USER",
+        is_banned: false, // Will be updated if user gets banned
+        banned_at: null,
+        notifications_enabled: true,
+        notification_token: null,
+        notification_url: null,
+        last_signal_date: now.toISOString().split("T")[0], // YYYY-MM-DD format
+        state_on_the_system: "ACTIVE",
+        wallet_address:
+          userFromNeynar.verified_addresses?.primary?.eth_address || null,
+        jbm_balance: "0",
+        is_subscriber: userFromNeynar.pro?.status === "subscribed" || false,
+        subscription_expires_at: userFromNeynar.pro?.expires_at
+          ? new Date(userFromNeynar.pro.expires_at).toISOString()
+          : null,
+        subscribed_at: userFromNeynar.pro?.subscribed_at
+          ? new Date(userFromNeynar.pro.subscribed_at).toISOString()
+          : null,
+        created_at: now.toISOString(),
+        updated_at: now.toISOString(),
+        last_active_at: now.toISOString(),
+      })
+      .onConflictDoUpdate({
+        username: userFromNeynar.username || null,
+        display_name: userFromNeynar.display_name || null,
+        pfp_url: userFromNeynar.pfp_url || null,
+        is_verified:
+          userFromNeynar.verifications &&
+          userFromNeynar.verifications.length > 0,
+        follower_count: userFromNeynar.follower_count || 0,
+        following_count: userFromNeynar.following_count || 0,
+        is_subscriber: userFromNeynar.pro?.status === "subscribed" || false,
+        subscription_expires_at: userFromNeynar.pro?.expires_at
+          ? new Date(userFromNeynar.pro.expires_at).toISOString()
+          : null,
+        subscribed_at: userFromNeynar.pro?.subscribed_at
+          ? new Date(userFromNeynar.pro.subscribed_at).toISOString()
+          : null,
+        last_signal_date: now.toISOString().split("T")[0],
+        updated_at: now.toISOString(),
+        last_active_at: now.toISOString(),
+      });
+  }
 
   await db
     .insert(tokens)
@@ -56,7 +129,7 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
     ca: event.args.token,
     direction: event.args.direction,
     duration_days: Number(event.args.durationDays),
-    entry_market_cap: Number(event.args.entryMarketCap),
+    entry_market_cap: Number(mc_when_signaled),
     created_at: event.args.createdAt,
     expires_at: event.args.expiresAt,
     timestamp: now.toISOString(),

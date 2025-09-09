@@ -21,7 +21,6 @@ async function fetchTokenMetadata(ca: string): Promise<any> {
   try {
     await rateLimit();
     const coinDataUrl = `${COINGECKO_API_URL}/coins/base/contract/${ca}`;
-    console.log("Fetching token metadata from:", coinDataUrl);
 
     const coinDataResponse = await fetch(coinDataUrl, {
       headers: {
@@ -32,7 +31,6 @@ async function fetchTokenMetadata(ca: string): Promise<any> {
 
     if (coinDataResponse.ok) {
       const coinData = await coinDataResponse.json();
-      console.log("Token metadata fetched successfully for:", ca);
       return coinData;
     } else if (coinDataResponse.status === 429) {
       console.warn("CoinGecko rate limit hit, waiting longer...");
@@ -51,10 +49,10 @@ async function fetchTokenMetadata(ca: string): Promise<any> {
   }
 }
 
-async function fetchHistoricalPrice(
+async function fetchHistoricalMarketData(
   coinId: string,
   timestamp: Date
-): Promise<number> {
+): Promise<{ price: number; marketCap: number }> {
   try {
     await rateLimit();
 
@@ -65,7 +63,7 @@ async function fetchHistoricalPrice(
     const toTimestamp = unixTimestamp + 3600;
 
     const url = `${COINGECKO_API_URL}/coins/${coinId}/market_chart/range?vs_currency=usd&from=${fromTimestamp}&to=${toTimestamp}`;
-    console.log("Fetching historical price from:", url);
+    console.log("Fetching historical market data from:", url);
 
     const response = await fetch(url, {
       headers: {
@@ -77,40 +75,49 @@ async function fetchHistoricalPrice(
     if (response.ok) {
       const data = (await response.json()) as any;
 
-      if (data.prices && data.prices.length > 0) {
-        // Find the price closest to our target timestamp
+      if (data.prices && data.prices.length > 0 && data.market_caps && data.market_caps.length > 0) {
+        // Find the data point closest to our target timestamp
         let closestPrice = data.prices[0];
+        let closestMarketCap = data.market_caps[0];
         let closestTimeDiff = Math.abs(
           data.prices[0][0] - unixTimestamp * 1000
         );
 
-        for (const pricePoint of data.prices) {
+        for (let i = 0; i < data.prices.length; i++) {
+          const pricePoint = data.prices[i];
+          const marketCapPoint = data.market_caps[i];
           const timeDiff = Math.abs(pricePoint[0] - unixTimestamp * 1000);
+          
           if (timeDiff < closestTimeDiff) {
             closestPrice = pricePoint;
+            closestMarketCap = marketCapPoint;
             closestTimeDiff = timeDiff;
           }
         }
 
         console.log(
-          `Historical price found for ${coinId} at ${timestamp}:`,
-          closestPrice[1]
+          `Historical data found for ${coinId} at ${timestamp}:`,
+          `Price: ${closestPrice[1]}, Market Cap: ${closestMarketCap[1]}`
         );
-        return closestPrice[1];
+        
+        return {
+          price: closestPrice[1],
+          marketCap: closestMarketCap[1]
+        };
       }
     } else if (response.status === 429) {
-      console.warn("CoinGecko rate limit hit for historical price");
+      console.warn("CoinGecko rate limit hit for historical market data");
       await new Promise((resolve) => setTimeout(resolve, 5000));
-      return await fetchHistoricalPrice(coinId, timestamp); // Retry once
+      return await fetchHistoricalMarketData(coinId, timestamp); // Retry once
     }
 
     console.warn(
-      `No historical price data found for ${coinId} at ${timestamp}`
+      `No historical market data found for ${coinId} at ${timestamp}`
     );
-    return 0;
+    return { price: 0, marketCap: 0 };
   } catch (error) {
-    console.error(`Failed to fetch historical price for ${coinId}:`, error);
-    return 0;
+    console.error(`Failed to fetch historical market data for ${coinId}:`, error);
+    return { price: 0, marketCap: 0 };
   }
 }
 
@@ -213,18 +220,20 @@ export async function fetchTokenInformation(
       }
     }
 
-    // Step 3: Get historical price if we have a CoinGecko coin ID
+    // Step 3: Get historical market data if we have a CoinGecko coin ID
     let historicalPrice = 0;
+    let marketCapAtSignal = 0;
+    
     if (coinData?.id) {
-      historicalPrice = await fetchHistoricalPrice(coinData.id, timestamp);
+      const historicalData = await fetchHistoricalMarketData(coinData.id, timestamp);
+      historicalPrice = historicalData.price;
+      marketCapAtSignal = historicalData.marketCap;
     } else if (coinData?.market_data?.current_price?.usd) {
-      // Fallback to current price if no historical data available
+      // Fallback to current price/market cap if no historical data available
       historicalPrice = coinData.market_data.current_price.usd;
-      console.log(`Using current price as fallback: ${historicalPrice}`);
+      marketCapAtSignal = coinData.market_data.market_cap?.usd || 0;
+      console.log(`Using current market data as fallback - Price: ${historicalPrice}, Market Cap: ${marketCapAtSignal}`);
     }
-
-    // Step 4: Calculate market cap at signal time
-    const marketCapAtSignal = coinData?.market_data?.market_cap?.usd || 0;
 
     // Step 5: Build token object
     const token: Token = {
@@ -284,5 +293,34 @@ export async function fetchTokenInformation(
       },
       0,
     ];
+  }
+}
+
+export async function fetchUserFromNeynar(fid: number): Promise<any> {
+  try {
+    const url = `https://api.neynar.com/v2/farcaster/user/bulk/?fids=${fid}`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "x-api-key": process.env.NEYNAR_API_KEY || "",
+        "x-neynar-experimental": "false",
+      },
+    });
+
+    if (!response.ok) {
+      console.warn(`Failed to fetch user ${fid} from Neynar:`, response.status);
+      return null;
+    }
+
+    const data = (await response.json()) as any;
+
+    if (data.users && data.users.length > 0) {
+      return data.users[0]; // Return the first user from the bulk response
+    }
+
+    return null;
+  } catch (error) {
+    console.error(`Error fetching user ${fid} from Neynar:`, error);
+    return null;
   }
 }

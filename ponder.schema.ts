@@ -7,7 +7,7 @@ export const signals = onchainTable("signals", (t) => ({
   ca: t.hex().notNull(), // Token contract address being predicted
   direction: t.boolean().notNull(), // false = DOWN, true = UP
   duration_days: t.integer().notNull(), // Duration in days (uint32)
-  entry_market_cap: t.integer().notNull(), // Market cap in USD when signal created (uint256)
+  entry_market_cap: t.bigint().notNull(), // Market cap in USD when signal created (uint256)
   created_at: t.bigint().notNull(), // uint64 timestamp from contract
   expires_at: t.bigint().notNull(), // uint64 timestamp from contract
   timestamp: t.date().notNull(), // Block timestamp when signal was created
@@ -15,6 +15,9 @@ export const signals = onchainTable("signals", (t) => ({
   resolved: t.boolean().notNull().default(false), // Whether signal has been resolved
   mfs_delta: t.integer().default(0), // int256 MFS delta applied
   manually_updated: t.boolean().notNull().default(false), // Whether owner has manually updated this signal
+  exit_market_cap: t.bigint(), // Market cap at signal resolution time
+  exit_market_cap_source: t.text(), // Source of exit market cap data
+  resolution_attempts: t.text(), // JSON array of attempted data sources during
 }));
 
 export const fid_stats = onchainTable("fid_stats", (t) => ({
@@ -79,8 +82,8 @@ export const signal_manual_updates = onchainTable(
     id: t.text().primaryKey(), // "{signalId}-{blockNumber}"
     signal_id: t.integer().notNull(),
     fid: t.integer().notNull(),
-    old_entry_market_cap: t.integer().notNull(), // uint256 as string
-    new_entry_market_cap: t.integer().notNull(), // uint256 as string
+    old_entry_market_cap: t.bigint().notNull(), // uint256 as string
+    new_entry_market_cap: t.bigint().notNull(), // uint256 as string
     old_mfs_delta: t.integer().notNull(), // int256 as string
     new_mfs_delta: t.integer().notNull(), // int256 as string
     new_total_mfs: t.integer().notNull(), // int256 as string
@@ -163,6 +166,8 @@ export const users = onchainTable("users", (t) => ({
 export const tokens = onchainTable("tokens", (t) => ({
   ca: t.hex().primaryKey(),
   coingecko_id: t.text(),
+  platform_id: t.text(),
+  fetched_from: t.text(),
   name: t.text(),
   symbol: t.text(),
   decimals: t.integer(),
@@ -171,7 +176,7 @@ export const tokens = onchainTable("tokens", (t) => ({
   image: t.text(),
   image_small: t.text(),
   image_thumb: t.text(),
-  market_cap_rank: t.integer(),
+  market_cap_rank: t.bigint(),
   market_data: t.text(),
   created_at: t.date().notNull(),
   updated_at: t.date().notNull(),

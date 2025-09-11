@@ -131,7 +131,7 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
       image: token_info.image,
       image_small: token_info.imageSmall,
       image_thumb: token_info.imageThumb,
-      market_cap_rank: Math.floor(Number(mc_when_signaled)),
+      market_cap_rank: BigInt(Math.floor(Number(mc_when_signaled))),
       market_data: token_info.marketData,
       created_at: now.toISOString(),
       updated_at: now.toISOString(),
@@ -151,7 +151,7 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
     ca: event.args.token,
     direction: event.args.direction,
     duration_days: Number(event.args.durationDays),
-    entry_market_cap: Math.floor(Number(mc_when_signaled)),
+    entry_market_cap: BigInt(Math.floor(Number(mc_when_signaled))),
     created_at: event.args.createdAt,
     expires_at: event.args.expiresAt,
     timestamp: now.toISOString(),
@@ -349,7 +349,7 @@ ponder.on(
     // Update the signal with manual update flag
     await db.update(signals, { signal_id: Number(event.args.signalId) }).set({
       manually_updated: true,
-      entry_market_cap: Number(event.args.newEntryMarketCap),
+      entry_market_cap: BigInt(event.args.newEntryMarketCap),
       mfs_delta: Number(event.args.newMfsDelta),
     });
 
@@ -358,8 +358,8 @@ ponder.on(
       id: `${event.args.signalId}-${event.block.number}`,
       signal_id: Number(event.args.signalId),
       fid: Number(event.args.fid),
-      old_entry_market_cap: Number(event.args.oldEntryMarketCap),
-      new_entry_market_cap: Number(event.args.newEntryMarketCap),
+      old_entry_market_cap: BigInt(event.args.oldEntryMarketCap),
+      new_entry_market_cap: BigInt(event.args.newEntryMarketCap),
       old_mfs_delta: Number(event.args.oldMfsDelta),
       new_mfs_delta: Number(event.args.newMfsDelta),
       new_total_mfs: Number(event.args.newTotalMFS),

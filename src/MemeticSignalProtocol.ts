@@ -116,7 +116,7 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
   }
 
   console.log(
-    `[SignalCreated] Inserting token ${token_info.symbol} with MC rank ${mc_when_signaled}`
+    `[SignalCreated] Inserting token ${token_info.symbol} with MC when signaled ${mc_when_signaled}`
   );
   await db
     .insert(tokens)
@@ -126,6 +126,7 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
       symbol: token_info.symbol,
       decimals: token_info.decimals,
       image: token_info.image,
+      entry_market_cap: mc_when_signaled,
       created_at: now.toISOString(),
       updated_at: now.toISOString(),
     })

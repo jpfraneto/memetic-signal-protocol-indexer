@@ -16,8 +16,9 @@ export const signals = onchainTable("signals", (t) => ({
   mfs_delta: t.integer().default(0), // int256 MFS delta applied
   manually_updated: t.boolean().notNull().default(false), // Whether owner has manually updated this signal
   exit_market_cap: t.bigint(), // Market cap at signal resolution time
-  exit_market_cap_source: t.text(), // Source of exit market cap data
   resolution_attempts: t.text(), // JSON array of attempted data sources during
+  data_sources: t.text(), // JSON array of data sources used for resolution
+  resolution_error: t.boolean().notNull().default(false), // Whether signal resolution failed
 }));
 
 export const fid_stats = onchainTable("fid_stats", (t) => ({
@@ -165,19 +166,10 @@ export const users = onchainTable("users", (t) => ({
 
 export const tokens = onchainTable("tokens", (t) => ({
   ca: t.hex().primaryKey(),
-  coingecko_id: t.text(),
-  platform_id: t.text(),
-  fetched_from: t.text(),
   name: t.text(),
   symbol: t.text(),
   decimals: t.integer(),
-  categories: t.text(),
-  description: t.text(),
   image: t.text(),
-  image_small: t.text(),
-  image_thumb: t.text(),
-  market_cap_rank: t.bigint(),
-  market_data: t.text(),
   created_at: t.date().notNull(),
   updated_at: t.date().notNull(),
 }));

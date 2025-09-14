@@ -30,7 +30,6 @@ export interface User {
 }
 
 export interface Token {
-  id?: string;
   ca: string;
   name?: string;
   symbol?: string;
@@ -40,8 +39,6 @@ export interface Token {
   image?: string;
   imageSmall?: string;
   imageThumb?: string;
-  marketCapRank?: number;
-  marketData?: string;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -121,22 +121,15 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
   await db
     .insert(tokens)
     .values({
-      coingecko_id: token_info.id,
       ca: event.args.token,
       name: token_info.name,
       symbol: token_info.symbol,
       decimals: token_info.decimals,
-      categories: token_info.categories,
-      description: token_info.description,
       image: token_info.image,
-      image_small: token_info.imageSmall,
-      image_thumb: token_info.imageThumb,
-      market_cap_rank: BigInt(Math.floor(Number(mc_when_signaled))),
-      market_data: token_info.marketData,
       created_at: now.toISOString(),
       updated_at: now.toISOString(),
     })
-    .onConflictDoUpdate({ market_data: token_info.marketData });
+    .onConflictDoUpdate({});
 
   // The signalId should be the first indexed parameter in SignalCreated event
   const signalId = Number(event.args.signalId);
@@ -162,9 +155,9 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
   });
 
   // Calculate day from deployment timestamp
-  const deploymentTimestamp = 1735689600; // Replace with actual deployment timestamp
+  const DEPLOYMENT_TIMESTAMP = 1757347723;
   const currentDay = Math.floor(
-    (now.getTime() - deploymentTimestamp) / 86400000
+    (now.getTime() - DEPLOYMENT_TIMESTAMP) / 86400000
   );
   const dayId = `${event.args.fid}-${currentDay}`;
   console.log(

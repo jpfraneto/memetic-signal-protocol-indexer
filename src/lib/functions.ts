@@ -1,8 +1,12 @@
 import { Token } from "../../types";
+import axios from "axios";
 
 const COINGECKO_API_URL = "https://pro-api.coingecko.com/api/v3";
 const BASE_NETWORK_PLATFORM_ID = "base";
 const REQUEST_DELAY = 1200; // 1.2 seconds between requests
+
+const ZAPPER_API_URL = "https://public.zapper.xyz/graphql";
+const BASE_CHAIN_ID = 8453;
 
 let lastRequestTime = 0;
 
@@ -129,55 +133,114 @@ async function fetchHistoricalMarketData(
   }
 }
 
-async function fetchFromDexScreener(ca: string): Promise<any> {
+async function fetchZapperTokenData(
+  ca: string,
+  timestamp: Date
+): Promise<{
+  price: number;
+  signalingMarketCap: number;
+  name: string;
+  symbol: string;
+  decimals: number;
+  imageUrlV2: string;
+} | null> {
   try {
-    const dexScreenerUrl = `https://api.dexscreener.com/tokens/v1/base/${ca}`;
-    console.log("Fetching from DexScreener:", dexScreenerUrl);
+    const query = `
+      query TokenPriceData($address: Address!, $chainId: Int!) {
+        fungibleTokenV2(address: $address, chainId: $chainId) {
+          address
+          symbol
+          name
+          decimals
+          imageUrlV2
+          priceData {
+            historicalPrice(timestamp: ${timestamp.getTime()}) {
+              timestamp
+              price
+            }
+            marketCap
+            price
+          }
+        }
+      }
+    `;
 
-    const response = await fetch(dexScreenerUrl);
+    const variables = {
+      address: ca.toLowerCase(),
+      chainId: BASE_CHAIN_ID,
+    };
+
+    console.log(`Fetching Zapper data for ${ca} at ${timestamp.getTime()}`);
+
+    const response = await fetch(ZAPPER_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-zapper-api-key": process.env.ZAPPER_API_KEY || "",
+      },
+      body: JSON.stringify({
+        query,
+        variables,
+      }),
+    });
 
     if (!response.ok) {
-      throw new Error(`DexScreener API returned ${response.status}`);
+      console.warn(`Zapper API returned ${response.status}`);
+      return null;
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as any;
 
-    if (!data || !Array.isArray(data) || data.length === 0) {
-      throw new Error("No token data found in DexScreener response");
+    if (data.errors) {
+      console.warn("Zapper GraphQL errors:", data.errors);
+      return null;
     }
 
-    const tokenData = data[0];
+    const tokenData = data.data?.fungibleTokenV2;
+    if (!tokenData?.priceData) {
+      console.warn(`No price data found for ${ca} on Zapper`);
+      return null;
+    }
 
-    // Transform DexScreener data to match CoinGecko format
+    const historicalPriceData = tokenData.priceData.historicalPrice;
+    if (!historicalPriceData) {
+      console.warn(`No historical price data found for ${ca} at ${timestamp}`);
+      return null;
+    }
+
+    const currentMarketCap = tokenData.priceData.marketCap || 0;
+    const currentPrice = tokenData.priceData.price || 0;
+    const historicalPrice = historicalPriceData.price || 0;
+
+    console.log(`Zapper historical data for ${ca}:`, {
+      signalingPrice: historicalPrice,
+      signalingTimestamp: historicalPriceData.timestamp,
+      currentPrice: currentPrice,
+      currentMarketCap: currentMarketCap,
+    });
+
+    // Calculate historical market cap using our derived equation:
+    // Historical Market Cap = (Current Market Cap / Current Price) × Historical Price
+    let signalingMarketCap = 0;
+    if (currentPrice > 0 && currentMarketCap > 0) {
+      signalingMarketCap = (currentMarketCap / currentPrice) * historicalPrice;
+    }
+
+    console.log(
+      `Calculated signaling market cap for ${ca}: ${signalingMarketCap}`
+    );
+
     return {
-      name: tokenData.baseToken?.name,
-      symbol: tokenData.baseToken?.symbol,
-      image: {
-        large: tokenData.info?.imageUrl,
-        small: tokenData.info?.imageUrl,
-        thumb: tokenData.info?.imageUrl,
-      },
-      market_data: {
-        current_price: {
-          usd: parseFloat(tokenData.priceUsd) || 0,
-        },
-        market_cap: {
-          usd: tokenData.marketCap || 0,
-        },
-      },
-      detail_platforms: {
-        base: {
-          decimal_place: 18, // Default to 18 decimals for most ERC20 tokens
-        },
-      },
-      categories: [],
-      description: {
-        en: `Token on Base network with symbol ${tokenData.baseToken?.symbol}`,
-      },
+      price: historicalPrice,
+      signalingMarketCap: Math.floor(signalingMarketCap),
+      name: tokenData.name || "Unknown Token",
+      symbol: tokenData.symbol || "UNKNOWN",
+      decimals: tokenData.decimals || 18,
+      imageUrlV2: tokenData.imageUrlV2 || "",
     };
   } catch (error) {
-    console.error(`Failed to fetch from DexScreener for ${ca}:`, error);
-    throw error;
+    console.error(`Failed to fetch Zapper data for ${ca}:`, error);
+    return null;
   }
 }
 
@@ -192,114 +255,86 @@ export async function fetchTokenInformation(
       `Fetching token information for ${normalizedAddress} at ${timestamp}`
     );
 
-    // Step 1: Get token metadata from CoinGecko
-    let coinData = await fetchTokenMetadata(normalizedAddress);
+    // Try Zapper as primary source (both price data and metadata)
+    const zapperData = await fetchZapperTokenData(normalizedAddress, timestamp);
 
-    // Step 2: If CoinGecko fails, try DexScreener as fallback
-    if (!coinData) {
-      console.log(
-        `CoinGecko failed, trying DexScreener for ${normalizedAddress}`
-      );
-      try {
-        coinData = await fetchFromDexScreener(normalizedAddress);
-      } catch (error) {
-        console.warn(
-          `DexScreener also failed for ${normalizedAddress}:`,
-          error
+    if (zapperData) {
+      // Build token object from Zapper data
+      const token: Token = {
+        name: zapperData.name,
+        symbol: zapperData.symbol,
+        decimals: zapperData.decimals,
+        image: zapperData.imageUrlV2,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        ca: normalizedAddress,
+      };
+
+      console.log(`Token information complete for ${normalizedAddress}:`, {
+        name: token.name,
+        symbol: token.symbol,
+        priceAtSignal: zapperData.price,
+        signalingMarketCap: zapperData.signalingMarketCap,
+      });
+
+      return [token, zapperData.signalingMarketCap];
+    }
+
+    // Fallback to CoinGecko if Zapper fails
+    console.log(
+      `Zapper failed for ${normalizedAddress}, trying CoinGecko fallback`
+    );
+
+    const coinData = await fetchTokenMetadata(normalizedAddress);
+    if (coinData) {
+      let historicalPrice = 0;
+      let marketCapAtSignal = 0;
+
+      if (coinData.id) {
+        const historicalData = await fetchHistoricalMarketData(
+          coinData.id,
+          timestamp
         );
-        // Return default token data if both fail
-        return [
-          {
-            name: "Unknown Token",
-            symbol: "UNKNOWN",
-            decimals: 18,
-            categories: "Unknown",
-            description: "Token data could not be fetched",
-            image: "",
-            imageSmall: "",
-            imageThumb: "",
-            marketData: JSON.stringify({ current_price: 0 }),
-            createdAt: timestamp,
-            updatedAt: timestamp,
-            ca: normalizedAddress,
-          },
-          0,
-        ];
+        if (historicalData.marketCap > 0) {
+          historicalPrice = historicalData.price;
+          marketCapAtSignal = historicalData.marketCap;
+        }
       }
+
+      const token: Token = {
+        name: coinData.name || "Unknown Token",
+        symbol: coinData.symbol || "UNKNOWN",
+        decimals:
+          parseInt(
+            coinData?.detail_platforms?.base?.decimal_place?.toString()
+          ) || 18,
+        categories: Array.isArray(coinData?.categories)
+          ? coinData.categories.join(", ")
+          : "Unknown",
+        description:
+          coinData?.description?.en ||
+          `Token ${coinData?.symbol || "UNKNOWN"} on Base network`,
+        image: coinData?.image?.large || "",
+        imageSmall: coinData?.image?.small || "",
+        imageThumb: coinData?.image?.thumb || "",
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        ca: normalizedAddress,
+      };
+
+      return [token, marketCapAtSignal];
     }
 
-    // Step 3: Get historical market data ONLY if we have a CoinGecko coin ID
-    let historicalPrice = 0;
-    let marketCapAtSignal = 0;
-
-    if (coinData?.id) {
-      const historicalData = await fetchHistoricalMarketData(
-        coinData.id,
-        timestamp
-      );
-      historicalPrice = historicalData.price;
-      marketCapAtSignal = historicalData.marketCap;
-    }
-    // NO FALLBACK - if no historical data found, leave as 0
-
-    // Step 5: Build token object
-    const token: Token = {
-      name: coinData?.name || "Unknown Token",
-      symbol: coinData?.symbol || "UNKNOWN",
-      decimals:
-        parseInt(coinData?.detail_platforms?.base?.decimal_place?.toString()) ||
-        18,
-      categories: Array.isArray(coinData?.categories)
-        ? coinData.categories.join(", ")
-        : "Unknown",
-      description:
-        coinData?.description?.en ||
-        `Token ${coinData?.symbol || "UNKNOWN"} on Base network`,
-      image: coinData?.image?.large || "",
-      imageSmall: coinData?.image?.small || "",
-      imageThumb: coinData?.image?.thumb || "",
-      marketData: JSON.stringify({
-        current_price: historicalPrice,
-        market_cap: marketCapAtSignal,
-        price_at_signal: historicalPrice,
-      }),
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      ca: normalizedAddress,
-    };
-
-    console.log(`Token information complete for ${normalizedAddress}:`, {
-      name: token.name,
-      symbol: token.symbol,
-      priceAtSignal: historicalPrice,
-      marketCap: marketCapAtSignal,
-    });
-
-    return [token, marketCapAtSignal];
+    // Both sources failed - throw error instead of returning fake data
+    throw new Error(
+      `Failed to fetch token data for ${normalizedAddress} from both Zapper and CoinGecko`
+    );
   } catch (error) {
     console.error(
       `Failed to fetch token information for ${normalizedAddress}:`,
       error
     );
-
-    // Return default token data on error
-    return [
-      {
-        name: "Error Token",
-        symbol: "ERROR",
-        decimals: 18,
-        categories: "Error",
-        description: "Failed to fetch token data",
-        image: "",
-        imageSmall: "",
-        imageThumb: "",
-        marketData: JSON.stringify({ current_price: 0 }),
-        createdAt: timestamp,
-        updatedAt: timestamp,
-        ca: normalizedAddress,
-      },
-      0,
-    ];
+    throw error;
   }
 }
 

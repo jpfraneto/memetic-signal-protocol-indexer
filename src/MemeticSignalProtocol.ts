@@ -126,11 +126,16 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
       symbol: token_info.symbol,
       decimals: token_info.decimals,
       image: token_info.image,
-      entry_market_cap: mc_when_signaled,
       created_at: now.toISOString(),
       updated_at: now.toISOString(),
+      market_cap: BigInt(Math.floor(Number(mc_when_signaled))),
     })
-    .onConflictDoUpdate({});
+    .onConflictDoUpdate({
+      decimals: token_info.decimals,
+      image: token_info.image,
+      updated_at: now.toISOString(),
+      market_cap: BigInt(Math.floor(Number(mc_when_signaled))),
+    });
 
   // The signalId should be the first indexed parameter in SignalCreated event
   const signalId = Number(event.args.signalId);
@@ -138,22 +143,27 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
     `[SignalCreated] Creating signal ${signalId} - ${event.args.direction} ${event.args.durationDays}d`
   );
 
-  await db.insert(signals).values({
-    signal_id: signalId,
-    transaction_hash: event.transaction.hash,
-    fid: Number(event.args.fid),
-    ca: event.args.token,
-    direction: event.args.direction,
-    duration_days: Number(event.args.durationDays),
-    entry_market_cap: BigInt(Math.floor(Number(mc_when_signaled))),
-    created_at: event.args.createdAt,
-    expires_at: event.args.expiresAt,
-    timestamp: now.toISOString(),
-    block_number: event.block.number,
-    resolved: false,
-    mfs_delta: 0,
-    manually_updated: false,
-  });
+  await db
+    .insert(signals)
+    .values({
+      signal_id: signalId,
+      transaction_hash: event.transaction.hash,
+      fid: Number(event.args.fid),
+      ca: event.args.token,
+      direction: event.args.direction,
+      duration_days: Number(event.args.durationDays),
+      entry_market_cap: BigInt(Math.floor(Number(mc_when_signaled))),
+      created_at: event.args.createdAt,
+      expires_at: event.args.expiresAt,
+      timestamp: now.toISOString(),
+      block_number: event.block.number,
+      resolved: false,
+      mfs_delta: 0,
+      manually_updated: false,
+    })
+    .onConflictDoUpdate({
+      entry_market_cap: BigInt(Math.floor(Number(mc_when_signaled))),
+    });
 
   // Calculate day from deployment timestamp
   const DEPLOYMENT_TIMESTAMP = 1757347723;

@@ -169,6 +169,7 @@ export const tokens = onchainTable("tokens", (t) => ({
   name: t.text(),
   symbol: t.text(),
   decimals: t.integer(),
+  market_cap: t.bigint(),
   image: t.text(),
   created_at: t.date().notNull(),
   updated_at: t.date().notNull(),

@@ -16,7 +16,7 @@ export default createConfig({
       abi: MemeticSignalProtocolAbi,
       address: "0x241dc35F698d3bA887Fffc30A6d6bf0E05FF46D8",
       chain: "base",
-      startBlock: 35501865, //35279188, // Deployment block: https://basescan.org/address/0x241dc35F698d3bA887Fffc30A6d6bf0E05FF46D8#code
+      startBlock: 35279188, //35279188, // Deployment block: https://basescan.org/address/0x241dc35F698d3bA887Fffc30A6d6bf0E05FF46D8#code
     },
   },
 });

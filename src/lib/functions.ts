@@ -325,16 +325,48 @@ export async function fetchTokenInformation(
       return [token, marketCapAtSignal];
     }
 
-    // Both sources failed - throw error instead of returning fake data
-    throw new Error(
-      `Failed to fetch token data for ${normalizedAddress} from both Zapper and CoinGecko`
+    // Both sources failed - return fallback data with raw token address
+    console.warn(
+      `Both Zapper and CoinGecko failed for ${normalizedAddress}, using fallback data`
     );
+    
+    const fallbackToken: Token = {
+      name: `Token ${normalizedAddress.slice(0, 8)}...`,
+      symbol: "UNKNOWN",
+      decimals: 18,
+      categories: "Unknown",
+      description: `Token at address ${normalizedAddress} on Base network`,
+      image: "",
+      imageSmall: "",
+      imageThumb: "",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      ca: normalizedAddress,
+    };
+
+    return [fallbackToken, 0];
   } catch (error) {
     console.error(
       `Failed to fetch token information for ${normalizedAddress}:`,
       error
     );
-    throw error;
+    
+    // Return fallback data instead of throwing error
+    const fallbackToken: Token = {
+      name: `Token ${normalizedAddress.slice(0, 8)}...`,
+      symbol: "UNKNOWN",
+      decimals: 18,
+      categories: "Unknown",
+      description: `Token at address ${normalizedAddress} on Base network`,
+      image: "",
+      imageSmall: "",
+      imageThumb: "",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      ca: normalizedAddress,
+    };
+
+    return [fallbackToken, 0];
   }
 }
 

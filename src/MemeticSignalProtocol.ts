@@ -16,7 +16,11 @@ import {
   resolver_updates,
   users,
 } from "../ponder.schema";
-import { fetchTokenInformation, fetchUserFromNeynar } from "./lib/functions";
+import {
+  fetchTokenInformation,
+  fetchUserFromNeynar,
+  publishCastToNeynar,
+} from "./lib/functions";
 
 ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
   const now = new Date();
@@ -190,6 +194,44 @@ ponder.on("MemeticSignalProtocol:SignalCreated", async ({ event, context }) => {
   console.log(
     `[SignalCreated] Successfully processed signal ${signalId} for ${token_info.symbol}`
   );
+
+  // Cast to Farcaster via Neynar (only if signal is recent - within 5 minutes)
+  const blockTimestamp = new Date(Number(event.block.timestamp) * 1000);
+  const timeDiffMinutes =
+    (now.getTime() - blockTimestamp.getTime()) / (1000 * 60);
+
+  if (timeDiffMinutes <= 5 && userFromNeynar?.username) {
+    const direction = event.args.direction ? "UP" : "DOWN";
+    const castText = `new signal by @${userFromNeynar.username}. $${token_info.symbol} going ${direction} on ${event.args.durationDays} days\n\n${event.args.token}`;
+
+    try {
+      const success = await publishCastToNeynar(castText);
+      if (success) {
+        console.log(
+          `[SignalCreated] Successfully published cast for signal ${signalId}`
+        );
+      } else {
+        console.error(
+          `[SignalCreated] Failed to publish cast for signal ${signalId}`
+        );
+      }
+    } catch (error) {
+      console.error(
+        `[SignalCreated] Error publishing cast for signal ${signalId}:`,
+        error
+      );
+    }
+  } else if (timeDiffMinutes > 5) {
+    console.log(
+      `[SignalCreated] Skipping cast - signal is ${timeDiffMinutes.toFixed(
+        1
+      )} minutes old (> 5 min threshold)`
+    );
+  } else {
+    console.log(
+      `[SignalCreated] Skipping cast - no username found for FID ${event.args.fid}`
+    );
+  }
 });
 
 ponder.on(

@@ -329,7 +329,7 @@ export async function fetchTokenInformation(
     console.warn(
       `Both Zapper and CoinGecko failed for ${normalizedAddress}, using fallback data`
     );
-    
+
     const fallbackToken: Token = {
       name: `Token ${normalizedAddress.slice(0, 8)}...`,
       symbol: "UNKNOWN",
@@ -350,7 +350,7 @@ export async function fetchTokenInformation(
       `Failed to fetch token information for ${normalizedAddress}:`,
       error
     );
-    
+
     // Return fallback data instead of throwing error
     const fallbackToken: Token = {
       name: `Token ${normalizedAddress.slice(0, 8)}...`,
@@ -396,5 +396,38 @@ export async function fetchUserFromNeynar(fid: number): Promise<any> {
   } catch (error) {
     console.error(`Error fetching user ${fid} from Neynar:`, error);
     return null;
+  }
+}
+
+export async function publishCastToNeynar(text: string): Promise<boolean> {
+  try {
+    const response = await fetch("https://api.neynar.com/v2/farcaster/cast", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        api_key: process.env.NEYNAR_API_KEY || "",
+        accept: "application/json",
+      },
+      body: JSON.stringify({
+        signer_uuid: process.env.NEYNAR_SIGNER_UUID || "",
+        text: text,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(
+        `Failed to publish cast to Neynar:`,
+        response.status,
+        await response.text()
+      );
+      return false;
+    }
+
+    const data = (await response.json()) as any;
+    console.log(`Successfully published cast:`, data.cast?.hash);
+    return true;
+  } catch (error) {
+    console.error(`Error publishing cast to Neynar:`, error);
+    return false;
   }
 }
